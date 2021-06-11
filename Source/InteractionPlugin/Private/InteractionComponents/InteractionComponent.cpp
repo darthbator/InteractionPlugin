@@ -1,32 +1,29 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "InteractionComponent.h"
+#include "InteractionComponents/InteractionComponent.h"
 #include "InteractorComponents/InteractorComponent.h"
 #include "Interface/InteractionInterface.h"
 
 DEFINE_LOG_CATEGORY(LogInteraction);
 
 UInteractionComponent::UInteractionComponent()
-	:InteractionType(EInteractionType::IT_None)
-	,bMultipleInteraction(true)
-	,InteractionStateNetMode(EInteractionNetMode::INM_OwnerOnly)
-	,bOnlyFaceInteraction(false)
+	: InteractionType(EInteractionType::IT_None), bMultipleInteraction(true), InteractionStateNetMode(EInteractionNetMode::INM_OwnerOnly), bOnlyFaceInteraction(false)
 {
 	this->SetIsReplicated(true);
 }
 
-void UInteractionComponent::SetInteractionFocusState(bool bNewFocus, UInteractorComponent* NewInteractorComponent /* = nullptr */)
+void UInteractionComponent::SetInteractionFocusState(bool bNewFocus, UInteractorComponent *NewInteractorComponent /* = nullptr */)
 {
 	if (OnInteractionFocusChanged.IsBound())
 	{
 		OnInteractionFocusChanged.Broadcast(bNewFocus);
 	}
-	
+
 	/* Set Focusing Interactor */
 	FocusingInteractor = NewInteractorComponent;
 }
 
-bool UInteractionComponent::StartInteraction(UInteractorComponent* InteractorComp)
+bool UInteractionComponent::StartInteraction(UInteractorComponent *InteractorComp)
 {
 	/* Validate Interactor Comp */
 	if (!IsValid(InteractorComp))
@@ -38,7 +35,7 @@ bool UInteractionComponent::StartInteraction(UInteractorComponent* InteractorCom
 	return true;
 }
 
-bool UInteractionComponent::StopInteraction(UInteractorComponent* InteractorComp)
+bool UInteractionComponent::StopInteraction(UInteractorComponent *InteractorComp)
 {
 	/* Validate Interactor Comp */
 	if (!IsValid(InteractorComp))
@@ -50,11 +47,11 @@ bool UInteractionComponent::StopInteraction(UInteractorComponent* InteractorComp
 	return true;
 }
 
-bool UInteractionComponent::CanInteractWith(UInteractorComponent* InteractorComp)
+bool UInteractionComponent::CanInteractWith(UInteractorComponent *InteractorComp)
 {
 
 	/* Get Owner */
-	AActor* Owner = GetOwner();
+	AActor *Owner = GetOwner();
 
 	/* Check for Interaction Interface and Execute If Owner Implements */
 	if (IsValid(Owner) &&
@@ -66,7 +63,7 @@ bool UInteractionComponent::CanInteractWith(UInteractorComponent* InteractorComp
 	return true;
 }
 
-void UInteractionComponent::CompleteInteraction(EInteractionResult InteractionResult, UInteractorComponent* InteractorComp)
+void UInteractionComponent::CompleteInteraction(EInteractionResult InteractionResult, UInteractorComponent *InteractorComp)
 {
 	/* Validate Interactor Comp */
 	if (IsValid(InteractorComp))
@@ -79,7 +76,7 @@ void UInteractionComponent::CompleteInteraction(EInteractionResult InteractionRe
 	}
 }
 
-void UInteractionComponent::NotifyInteraction(EInteractionResult NewInteractionResult, UInteractorComponent* NewInteractionComponent)
+void UInteractionComponent::NotifyInteraction(EInteractionResult NewInteractionResult, UInteractorComponent *NewInteractionComponent)
 {
 	/**
 	 * @note: OwnerOnly Notifications are Handled and Recieved By the Interactor Component
@@ -91,7 +88,7 @@ void UInteractionComponent::NotifyInteraction(EInteractionResult NewInteractionR
 	}
 }
 
-void UInteractionComponent::ClientNotifyInteraction(EInteractionResult NewInteractionResult, UInteractorComponent* NewInteractionComponent)
+void UInteractionComponent::ClientNotifyInteraction(EInteractionResult NewInteractionResult, UInteractorComponent *NewInteractionComponent)
 {
 	if (OnInteractionStateChanged.IsBound())
 	{
@@ -101,7 +98,7 @@ void UInteractionComponent::ClientNotifyInteraction(EInteractionResult NewIntera
 	}
 }
 
-void UInteractionComponent::Multi_NotifyInteraction_Implementation(EInteractionResult NewInteractionResult, UInteractorComponent* NewInteractionComponent)
+void UInteractionComponent::Multi_NotifyInteraction_Implementation(EInteractionResult NewInteractionResult, UInteractorComponent *NewInteractionComponent)
 {
 	if (OnInteractionStateChanged.IsBound())
 	{
@@ -110,7 +107,6 @@ void UInteractionComponent::Multi_NotifyInteraction_Implementation(EInteractionR
 			IsValid(NewInteractionComponent) ? NewInteractionComponent->GetOwner() : nullptr);
 	}
 }
-
 
 void UInteractionComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {

@@ -1,17 +1,17 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "InteractionComponent_Hold.h"
+#include "InteractionComponents/InteractionComponent_Hold.h"
 #include "Engine/World.h"
 #include "InteractorComponents/InteractorComponent.h"
 
 UInteractionComponent_Hold::UInteractionComponent_Hold()
-	:InteractionDuration(10.0f)
+	: InteractionDuration(10.0f)
 {
 	PrimaryComponentTick.bCanEverTick = false;
 	InteractionType = EInteractionType::IT_Hold;
 }
 
-bool UInteractionComponent_Hold::StartInteraction(UInteractorComponent* InteractorComp)
+bool UInteractionComponent_Hold::StartInteraction(UInteractorComponent *InteractorComp)
 {
 	/* Exit If Super Returns False */
 	if (!Super::StartInteraction(InteractorComp))
@@ -25,7 +25,7 @@ bool UInteractionComponent_Hold::StartInteraction(UInteractorComponent* Interact
 	return true;
 }
 
-void UInteractionComponent_Hold::OnHoldCompleted(UInteractorComponent* InteractorComp)
+void UInteractionComponent_Hold::OnHoldCompleted(UInteractorComponent *InteractorComp)
 {
 	if (IsInteractionTimeOver(InteractorComp))
 	{
@@ -42,7 +42,7 @@ void UInteractionComponent_Hold::OnHoldCompleted(UInteractorComponent* Interacto
 	Interactors.Remove(InteractorComp);
 }
 
-bool UInteractionComponent_Hold::StopInteraction(UInteractorComponent* InteractorComp)
+bool UInteractionComponent_Hold::StopInteraction(UInteractorComponent *InteractorComp)
 {
 	/* Exit If Super Returns False */
 	if (!Super::StopInteraction(InteractorComp))
@@ -62,32 +62,31 @@ bool UInteractionComponent_Hold::StopInteraction(UInteractorComponent* Interacto
 	return true;
 }
 
-bool UInteractionComponent_Hold::CanInteractWith(UInteractorComponent* InteractoComp)
+bool UInteractionComponent_Hold::CanInteractWith(UInteractorComponent *InteractoComp)
 {
 	return Super::CanInteractWith(InteractoComp) && bMultipleInteraction || Interactors.Num() == 0;
 }
 
-bool UInteractionComponent_Hold::IsInteractionTimeOver(const UInteractorComponent* InteractorComponent) const
+bool UInteractionComponent_Hold::IsInteractionTimeOver(const UInteractorComponent *InteractorComponent) const
 {
 	if (Interactors.Contains(InteractorComponent))
 	{
-		const UWorld* World = GetWorld();
+		const UWorld *World = GetWorld();
 
 		/* Interaction Duration With Addition Error Tolerance of 0.5 */
 		const float ErrorToleranceDuration = InteractionDuration - 0.5f;
 
 		return IsValid(World) ? Interactors[InteractorComponent] + ErrorToleranceDuration <= World->GetTimeSeconds() : false;
-
 	}
 
 	return false;
 }
 
-void UInteractionComponent_Hold::AddInteractor(UInteractorComponent* InteractorComponent)
+void UInteractionComponent_Hold::AddInteractor(UInteractorComponent *InteractorComponent)
 {
 	/* Get World and Time Seconds */
-	const UWorld* World = GetWorld();
-	
+	const UWorld *World = GetWorld();
+
 	Interactors.Add(InteractorComponent, IsValid(World) ? World->GetTimeSeconds() : 0.0f);
 }
 

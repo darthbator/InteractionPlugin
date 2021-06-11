@@ -1,8 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "InteractorComponent.h"
+#include "InteractorComponents/InteractorComponent.h"
 #include "Runtime/Engine/Classes/GameFramework/Actor.h"
-#include "UnrealNetwork.h"
+#include "Net/UnrealNetwork.h"
 #include "InteractionComponents/InteractionComponent.h"
 #include "InteractionComponents/InteractionComponent_Hold.h"
 #include "Interface/InteractionInterface.h"
@@ -14,15 +14,15 @@
 DEFINE_LOG_CATEGORY(LogInteractor);
 
 UInteractorComponent::UInteractorComponent()
-	:bInteracting(false),
-	InteractorStateNetMode(EInteractionNetMode::INM_OwnerOnly),
-	InteractorReachLength(120.0f)
+	: bInteracting(false),
+	  InteractorStateNetMode(EInteractionNetMode::INM_OwnerOnly),
+	  InteractorReachLength(120.0f)
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	this->SetIsReplicated(true);
 }
 
-void UInteractorComponent::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
+void UInteractorComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
@@ -34,7 +34,8 @@ void UInteractorComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 
 	if ((EndPlayReason == EEndPlayReason::Destroyed ||
-		EndPlayReason == EEndPlayReason::RemovedFromWorld) && bInteracting)
+		 EndPlayReason == EEndPlayReason::RemovedFromWorld) &&
+		bInteracting)
 	{
 		TryStopInteraction();
 	}
@@ -47,21 +48,20 @@ void UInteractorComponent::BeginPlay()
 
 	/* Only Tick On Server and Owning Client */
 	SetComponentTickEnabled(
-		ShouldTickInstance()
-	);	
+		ShouldTickInstance());
 }
 
-UInteractionComponent* UInteractorComponent::GetInteractionTrace()
+UInteractionComponent *UInteractorComponent::GetInteractionTrace()
 {
 	/* Get World */
-	const UWorld* World = GetWorld();
+	const UWorld *World = GetWorld();
 	if (World == nullptr)
 	{
 		return nullptr;
 	}
 
 	/* Get Owner */
-	const AActor* Owner = GetOwner();
+	const AActor *Owner = GetOwner();
 	if (!IsValid(Owner))
 	{
 		return nullptr;
@@ -94,24 +94,24 @@ UInteractionComponent* UInteractorComponent::GetInteractionTrace()
 	const bool bHit = World->LineTraceSingleByChannel(OutHit, StartLocation, EndLocation, ECollisionChannel::ECC_Visibility, QueryParams);
 
 	/* Get Interaction Component */
-	if (bHit)
+	if (bHit && OutHit.GetActor() != nullptr)
 	{
-		UActorComponent* ActorComp = OutHit.Actor->GetComponentByClass(UInteractionComponent::StaticClass());
 
-		return Cast <UInteractionComponent>(ActorComp);
+		UActorComponent *ActorComp = OutHit.GetActor()->GetComponentByClass(UInteractionComponent::StaticClass());
+
+		return Cast<UInteractionComponent>(ActorComp);
 	}
 
 	return nullptr;
-
 }
 
-bool UInteractorComponent::ValidateDirection(const UInteractionComponent* InteractionComponent) const
+bool UInteractorComponent::ValidateDirection(const UInteractionComponent *InteractionComponent) const
 {
 	if (!IsValid(InteractionComponent))
 	{
 		return false;
 	}
-	
+
 	/* Return True Early If Face Only Interaction is Not Required */
 	if (!InteractionComponent->bOnlyFaceInteraction)
 	{
@@ -173,7 +173,7 @@ void UInteractorComponent::StartInteraction()
 	SetInteracting(true);
 
 	const bool bStarted = InteractionCandidate->StartInteraction(this);
-	
+
 	/* If Failed to Start , Fail Initiation */
 	if (!bStarted)
 	{
@@ -188,9 +188,9 @@ void UInteractorComponent::StartInteraction()
 	/* Start Interactor Timer If Interaction Type is Hold */
 	if (InteractionCandidate->GetInteractionType() == EInteractionType::IT_Hold)
 	{
-		UInteractionComponent_Hold* InteractionHold = Cast<UInteractionComponent_Hold>(InteractionCandidate);
+		UInteractionComponent_Hold *InteractionHold = Cast<UInteractionComponent_Hold>(InteractionCandidate);
 
-		ToggleInteractorTimer(true,IsValid(InteractionHold) ? InteractionHold->GetInteractionDuration() : 0.1f);
+		ToggleInteractorTimer(true, IsValid(InteractionHold) ? InteractionHold->GetInteractionDuration() : 0.1f);
 	}
 
 	/* Notify Interaction Started Result */
@@ -206,7 +206,7 @@ void UInteractorComponent::TryStopInteraction()
 	}
 
 	/* Return/Exit If No Interaction in Progress */
-	if (!bInteracting  || !IsValid(InteractionCandidate))
+	if (!bInteracting || !IsValid(InteractionCandidate))
 	{
 		return;
 	}
@@ -220,7 +220,7 @@ void UInteractorComponent::Server_TryStopInteraction_Implementation()
 	TryStopInteraction();
 }
 
-void UInteractorComponent::EndInteraction(EInteractionResult InteractionResult, UInteractionComponent* InteractionComponent)
+void UInteractorComponent::EndInteraction(EInteractionResult InteractionResult, UInteractionComponent *InteractionComponent)
 {
 
 	/* Validate Ending Interaction Is Interactor Target Else Fail*/
@@ -238,19 +238,18 @@ void UInteractorComponent::EndInteraction(EInteractionResult InteractionResult, 
 	const EInteractionType EndingInteractionType = IsValid(InteractionComponent) ? InteractionComponent->GetInteractionType() : EInteractionType::IT_None;
 
 	/* Clear Interaction Timer In Case Of Interruption */
-	if(EndingInteractionType == EInteractionType::IT_Hold)
+	if (EndingInteractionType == EInteractionType::IT_Hold)
 	{
 		ToggleInteractorTimer(false);
 	}
 
 	/* Notify Interaction Started Result */
 	NotifyInteraction(
-		InteractionResult, 
-		EndingInteractionType
-	);
+		InteractionResult,
+		EndingInteractionType);
 }
 
-void UInteractorComponent::LocalEndInteractionFocus(UInteractionComponent* InteractionComponent)
+void UInteractorComponent::LocalEndInteractionFocus(UInteractionComponent *InteractionComponent)
 {
 	if (InteractionComponent == InteractionCandidate && OnNewInteraction.IsBound())
 	{
@@ -258,10 +257,10 @@ void UInteractorComponent::LocalEndInteractionFocus(UInteractionComponent* Inter
 	}
 }
 
-bool UInteractorComponent::CanInteractWith(UInteractionComponent* InteractionComponent)
+bool UInteractorComponent::CanInteractWith(UInteractionComponent *InteractionComponent)
 {
 	/* Get Owner */
-	AActor* Owner = GetOwner();
+	AActor *Owner = GetOwner();
 
 	/* Check for Interaction Interface and Execute If Owner Implements */
 	if (IsValid(Owner) &&
@@ -277,7 +276,7 @@ bool UInteractorComponent::CanInteractWith(UInteractionComponent* InteractionCom
 void UInteractorComponent::ToggleInteractorTimer(bool bStartTImer /*= true*/, float NewInteractionDuration /*= 0.1f*/)
 {
 	/* Get World */
-	const UWorld* World = GetWorld();
+	const UWorld *World = GetWorld();
 
 	if (!IsValid(World))
 	{
@@ -295,14 +294,13 @@ void UInteractorComponent::ToggleInteractorTimer(bool bStartTImer /*= true*/, fl
 		/* Clear The Timer */
 		World->GetTimerManager().ClearTimer(InteractorTimer);
 	}
-
 }
 
 void UInteractorComponent::OnInteractorTimerCompleted()
 {
 	UE_LOG(LogInteractor, Log, TEXT("Interactor Timer Completed"));
 
-	UInteractionComponent_Hold* InteractionHold = Cast<UInteractionComponent_Hold>(InteractionCandidate);
+	UInteractionComponent_Hold *InteractionHold = Cast<UInteractionComponent_Hold>(InteractionCandidate);
 
 	/* Validate Interaction Hold Component Is Valid */
 	if (!IsValid(InteractionHold))
@@ -325,7 +323,7 @@ void UInteractorComponent::OnRep_bInteracting()
 	}
 }
 
-void UInteractorComponent::RegisterNewInteraction(UInteractionComponent* NewInteraction)
+void UInteractorComponent::RegisterNewInteraction(UInteractionComponent *NewInteraction)
 {
 	if (!IsValid(NewInteraction))
 	{
@@ -344,7 +342,7 @@ void UInteractorComponent::RegisterNewInteraction(UInteractionComponent* NewInte
 	/* Local Interactor */
 	if (IsLocalInteractor())
 	{
-		NewInteraction->SetInteractionFocusState(true,this);
+		NewInteraction->SetInteractionFocusState(true, this);
 
 		if (OnNewInteraction.IsBound())
 		{
@@ -366,38 +364,37 @@ void UInteractorComponent::DeRegisterInteraction()
 	{
 		if (IsValid(InteractionCandidate))
 		{
-				InteractionCandidate->SetInteractionFocusState(false);
+			InteractionCandidate->SetInteractionFocusState(false);
 		}
 
 		if (OnNewInteraction.IsBound())
 		{
-				OnNewInteraction.Broadcast(nullptr);
+			OnNewInteraction.Broadcast(nullptr);
 		}
 	}
 
 	InteractionCandidate = nullptr;
 }
 
-void UInteractorComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UInteractorComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	if (bInteracting)
 	{
 		/* If Interacting Get the New Interaction Candidate and Compare to the Current Interacting Component*/
-		const UInteractionComponent* NewInteraction = GetInteractionTrace();
+		const UInteractionComponent *NewInteraction = GetInteractionTrace();
 
 		if (!ValidateDirection(NewInteraction) || NewInteraction != InteractionCandidate)
 		{
 			/* Cancel Interaction If not Valid Interaction */
 			DeRegisterInteraction();
 		}
-
 	}
-	else if(IsLocalInteractor())
+	else if (IsLocalInteractor())
 	{
 		/* Locally Get Interaction and Validate the Component */
-		UInteractionComponent* NewInteraction = GetInteractionTrace();
+		UInteractionComponent *NewInteraction = GetInteractionTrace();
 
 		if (ValidateDirection(NewInteraction))
 		{
@@ -407,12 +404,11 @@ void UInteractorComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 				RegisterNewInteraction(NewInteraction);
 			}
 		}
-		else if(IsValid(InteractionCandidate))
+		else if (IsValid(InteractionCandidate))
 		{
 			/* DeRegister Interaction If No Valid Interaction Component Exits*/
 			DeRegisterInteraction();
 		}
-		
 	}
 }
 
@@ -439,7 +435,7 @@ void UInteractorComponent::Client_NotifyInteraction_Implementation(EInteractionR
 		/* Try to Get Interaction Duration If Candidate is a Hold Interaction */
 		float NewInteractionDuration = 0.0f;
 
-		UInteractionComponent_Hold* InteractionComp_Hold = Cast<UInteractionComponent_Hold>(InteractionCandidate);
+		UInteractionComponent_Hold *InteractionComp_Hold = Cast<UInteractionComponent_Hold>(InteractionCandidate);
 
 		if (IsValid(InteractionComp_Hold))
 		{
@@ -451,8 +447,7 @@ void UInteractorComponent::Client_NotifyInteraction_Implementation(EInteractionR
 			NewInteractionResult,
 			NewInteractionType,
 			NewInteractionDuration,
-			IsValid(InteractionCandidate) ? InteractionCandidate->GetOwner() : nullptr
-		);
+			IsValid(InteractionCandidate) ? InteractionCandidate->GetOwner() : nullptr);
 	}
 
 	/* Notify Interaction Locally If Interaction Net Mode is Owner Only*/
@@ -471,7 +466,7 @@ void UInteractorComponent::Multi_NotifyInteraction_Implementation(EInteractionRe
 		/* Try to Get Interaction Duration If Candidate is a Hold Interaction */
 		float NewInteractionDuration = 0.0f;
 
-		UInteractionComponent_Hold* InteractionComp_Hold = Cast<UInteractionComponent_Hold>(InteractionCandidate);
+		UInteractionComponent_Hold *InteractionComp_Hold = Cast<UInteractionComponent_Hold>(InteractionCandidate);
 
 		if (IsValid(InteractionComp_Hold))
 		{
@@ -483,7 +478,6 @@ void UInteractorComponent::Multi_NotifyInteraction_Implementation(EInteractionRe
 			NewInteractionResult,
 			NewInteractionType,
 			NewInteractionDuration,
-			IsValid(InteractionCandidate) ? InteractionCandidate->GetOwner() : nullptr
-		);
+			IsValid(InteractionCandidate) ? InteractionCandidate->GetOwner() : nullptr);
 	}
 }
