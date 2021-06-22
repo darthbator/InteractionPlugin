@@ -19,7 +19,7 @@ UInteractorComponent::UInteractorComponent()
 	  InteractorReachLength(120.0f)
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	this->SetIsReplicated(true);
+	this->SetIsReplicatedByDefault(true);
 }
 
 void UInteractorComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutLifetimeProps) const
