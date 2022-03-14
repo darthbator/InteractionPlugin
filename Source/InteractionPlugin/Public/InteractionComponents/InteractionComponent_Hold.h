@@ -83,7 +83,7 @@ private:
 	 * @returns True If Duration is Over
 	 */
 	UFUNCTION()
-		inline bool IsInteractionTimeOver(const UInteractorComponent* InteractorComponent) const;
+		bool IsInteractionTimeOver(const UInteractorComponent* InteractorComponent) const;
 
 	/**
 	 * Adds Interactor and the Current Game World Time to the Interactor Map 
